@@ -24,9 +24,8 @@
 
 // Vampire headers
 //
-//#include "ltmp.hpp"
-//#include "material.hpp"
-
+// #include "ltmp.hpp"
+// #include "material.hpp"
 
 // namespace abbreviation for brevity
 namespace pg = program;
@@ -35,88 +34,118 @@ namespace pgi = program::internal;
 //------------------------------------------------------------------------------
 // Function to update STT/SOT and spin transport parameters
 //------------------------------------------------------------------------------
-void update_electric_field_strength(const double time_from_start){
+void update_electric_field_strength(const double time_from_start) {
 
-   // implement rise time
-   if( time_from_start < pgi::electrical_pulse_rise_time ){
-      pg::fractional_electric_field_strength = time_from_start / pgi::electrical_pulse_rise_time;
-   }
-   // implement continuous current
-   else if( time_from_start < pgi::electrical_pulse_rise_time + pgi::electrical_pulse_time ){
-      pg::fractional_electric_field_strength = 1.0;
-   }
-   // implement fall time
-   else if( time_from_start < pgi::electrical_pulse_rise_time + pgi::electrical_pulse_time + pgi::electrical_pulse_fall_time) {
-      const double fractional_fall_time = time_from_start - (pgi::electrical_pulse_rise_time + pgi::electrical_pulse_time);
-      pg::fractional_electric_field_strength = 1.0 - fractional_fall_time / pgi::electrical_pulse_fall_time;
-   }
-   // after pulse current = 0
-   else{
-      pg::fractional_electric_field_strength = 0.0;
-   }
+  // implement rise time
+  if (time_from_start < pgi::electrical_pulse_rise_time) {
+    pg::fractional_electric_field_strength =
+        (time_from_start / pgi::electrical_pulse_rise_time) *
+        pgi::electrical_strength;
+  }
+  // implement continuous current
+  else if (time_from_start <
+           pgi::electrical_pulse_rise_time + pgi::electrical_pulse_time) {
+    pg::fractional_electric_field_strength = pgi::electrical_strength;
+  }
+  // implement fall time
+  else if (time_from_start < pgi::electrical_pulse_rise_time +
+                                 pgi::electrical_pulse_time +
+                                 pgi::electrical_pulse_fall_time) {
+    const double fractional_fall_time =
+        time_from_start -
+        (pgi::electrical_pulse_rise_time + pgi::electrical_pulse_time);
+    pg::fractional_electric_field_strength =
+        pgi::electrical_strength -
+        fractional_fall_time / pgi::electrical_pulse_fall_time;
+  }
+  // after pulse current = 0
+  else {
+    pg::fractional_electric_field_strength = 0.0;
+  }
 
-   return;
-
+  return;
 }
 
+void update_electric_field_strength_gaussian(const double time_from_start) {
+  // Center of the pulse
+  const double pulse_center =
+      (pgi::electrical_pulse_rise_time + pgi::electrical_pulse_time +
+       pgi::electrical_pulse_fall_time) /
+      2;
 
-namespace program{
+  // Width of the pulse
+  const double pulse_width =
+      (pgi::electrical_pulse_rise_time + pgi::electrical_pulse_time +
+       pgi::electrical_pulse_fall_time) /
+      4;
 
+  // Calculate Gaussian pulse
+  pg::fractional_electric_field_strength =
+      pgi::electrical_strength *
+      exp(-pow(time_from_start - pulse_center, 2) / (2 * pow(pulse_width, 2)));
 
-void electrical_pulse(){
+  return;
+}
 
-   // check calling of routine if error checking is activated
-   if(err::check==true){std::cout << "program::electrical_pulse has been called" << std::endl;}
+namespace program {
 
-   // Set equilibration temperature and zero current
-   const double temp = sim::temperature; // current simulation temperature
-   sim::temperature = sim::Teq;
-   pg::fractional_electric_field_strength = 0.0;
+void electrical_pulse() {
 
-   // Equilibrate system
-   while( sim::time < sim::equilibration_time){
+  // check calling of routine if error checking is activated
+  if (err::check == true) {
+    std::cout << "program::electrical_pulse has been called" << std::endl;
+  }
 
-      sim::integrate(sim::partial_time);
+  // Set equilibration temperature and zero current
+  const double temp = sim::temperature; // current simulation temperature
+  sim::temperature = sim::Teq;
+  pg::fractional_electric_field_strength = 0.0;
 
-      // Calculate magnetisation statistics
-      stats::update();
+  // Equilibrate system
+  while (sim::time < sim::equilibration_time) {
 
-      // Output data
-      vout::data();
-   }
+    sim::integrate(sim::partial_time);
 
-   // record starting time after equilibration
-   uint64_t start_time = sim::time;
+    // Calculate magnetisation statistics
+    stats::update();
 
-   // Set constant temperature
-   sim::temperature = temp;
+    // Output data
+    vout::data();
+  }
 
-   // Simulate electrical pulse
-   while(sim::time < sim::total_time+start_time){
+  // record starting time after equilibration
+  uint64_t start_time = sim::time;
 
-      // loop over partial_time to update temperature every time
-      for(uint64_t tt=0; tt < sim::partial_time; tt++){
+  // Set constant temperature
+  sim::temperature = temp;
 
-         // Calculate time from pulse
-         double time_from_start = mp::dt_SI * double(sim::time-start_time);
+  // Simulate electrical pulse
+  while (sim::time < sim::total_time + start_time) {
 
-         // Calculate electrical field strength
-         update_electric_field_strength(time_from_start);
+    // loop over partial_time to update temperature every time
+    for (uint64_t tt = 0; tt < sim::partial_time; tt++) {
 
-         // Integrate system
-         sim::integrate(1);
+      // Calculate time from pulse
+      double time_from_start = mp::dt_SI * double(sim::time - start_time);
 
+      // Calculate electrical field strength
+      if (pg::internal::electrical_pulse_shape == "square") {
+        update_electric_field_strength(time_from_start);
+      } else if (pg::internal::electrical_pulse_shape == "gaussian") {
+        update_electric_field_strength_gaussian(time_from_start);
       }
+      // Integrate system
+      sim::integrate(1);
+    }
 
-      // Calculate magnetisation statistics
-      stats::update();
+    // Calculate magnetisation statistics
+    stats::update();
 
-      // Output data
-      vout::data();
+    // Output data
+    vout::data();
+  }
 
-   }
-
-   return;
+  return;
 
 } // end of electrical pulse
 
