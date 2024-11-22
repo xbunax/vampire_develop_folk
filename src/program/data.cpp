@@ -45,6 +45,12 @@ double electrical_pulse_rise_time =
 double electrical_pulse_fall_time =
     0.0; // linear fall time for electrical pulse (0.0 default)
 double electrical_strength = 0.0; // set the value of frac_voltage
+//
+double electrical_duration = 0.0; // set the value of duration
+
+double electrical_begin_time = 0.0; // set the value of duration
+
+double electrical_consistent_time = 0.0; // set the value of duration
 
 std::string electrical_pulse_shape = "square"; // set the shape of pulse shape
 

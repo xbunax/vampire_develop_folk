@@ -62,8 +62,46 @@ void update_electric_field_strength(const double time_from_start) {
   else {
     pg::fractional_electric_field_strength = 0.0;
   }
-
   return;
+}
+
+void update_electrical_pulse_consistent(const double time_from_start) {
+  if (time_from_start <= pg::internal::electrical_begin_time) {
+    pg::fractional_electric_field_strength = 0.0;
+  } else {
+    // Calculate the time within the current pulse cycle
+    const double cycle_time = fmod(time_from_start, pgi::electrical_duration);
+
+    // Implement rise time
+    if (cycle_time < pgi::electrical_pulse_rise_time) {
+      pg::fractional_electric_field_strength =
+          (cycle_time / pgi::electrical_pulse_rise_time) *
+          pgi::electrical_strength;
+    }
+    // Implement continuous current
+    else if (cycle_time < pgi::electrical_pulse_rise_time +
+                              pgi::electrical_consistent_time) {
+      pg::fractional_electric_field_strength = pgi::electrical_strength;
+    }
+    // Implement fall time
+    else if (cycle_time < pgi::electrical_pulse_rise_time +
+                              pgi::electrical_consistent_time +
+                              pgi::electrical_pulse_fall_time) {
+      const double fractional_fall_time =
+          cycle_time -
+          (pgi::electrical_pulse_rise_time + pgi::electrical_consistent_time);
+      pg::fractional_electric_field_strength =
+          pgi::electrical_strength -
+          (fractional_fall_time / pgi::electrical_pulse_fall_time) *
+              pgi::electrical_strength;
+    }
+    // Between pulses, current = 0
+    else {
+      pg::fractional_electric_field_strength = 0.0;
+    }
+
+    return;
+  }
 }
 
 void update_electric_field_strength_gaussian(const double time_from_start) {
@@ -133,6 +171,8 @@ void electrical_pulse() {
         update_electric_field_strength(time_from_start);
       } else if (pg::internal::electrical_pulse_shape == "gaussian") {
         update_electric_field_strength_gaussian(time_from_start);
+      } else if (pg::internal::electrical_pulse_shape == "consistent") {
+        update_electrical_pulse_consistent(time_from_start);
       }
       // Integrate system
       sim::integrate(1);

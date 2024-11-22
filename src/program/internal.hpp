@@ -52,9 +52,9 @@ public:
   // constructor
   mp_t(const unsigned int max_materials = 100)
       : test(0.0) // constructor initialisation of test variable
-        {
-            // constructor body for initialising more complex data/arrays
-        }; // end of constructor
+  {
+    // constructor body for initialising more complex data/arrays
+  }; // end of constructor
 
 }; // end of internal::mp class
 
@@ -73,6 +73,12 @@ extern double electrical_pulse_rise_time; // linear rise time for electrical
 extern double electrical_pulse_fall_time; // linear fall time for electrical
                                           // pulse (0.0 default)
 extern double electrical_strength;        // pulse strength
+
+extern double electrical_duration;
+
+extern double electrical_begin_time;
+
+extern double electrical_consistent_time;
 
 extern std::string electrical_pulse_shape; // pulse shape (square and gaussian)
 

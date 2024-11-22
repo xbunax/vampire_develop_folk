@@ -277,7 +277,7 @@ bool match_input_parameter(std::string const key, std::string const word,
   //--------------------------------------------------------------------
   test = "electrical-pulse-shape";
   if (word == test) {
-    if (value == "gaussian" or value == "square") {
+    if (value == "gaussian" or value == "square" or value == "consistent") {
       program::internal::electrical_pulse_shape = value;
       return true;
     } else {
@@ -285,6 +285,40 @@ bool match_input_parameter(std::string const key, std::string const word,
       return false;
     }
   }
+
+  test = "electrical-duration";
+  if (word == test) {
+    double pt = atof(value.c_str()); // convert string to uint64_t
+    // Test for valid range
+    vin::check_for_valid_positive_value(pt, word, line, prefix, unit, "time", 0,
+                                        1, "input", "0.0 - 1s");
+    // save sanitized value
+    program::internal::electrical_duration = pt;
+    return true;
+  }
+
+  test = "electrical-begin-time";
+  if (word == test) {
+    double pt = atof(value.c_str()); // convert string to uint64_t
+    // Test for valid range
+    vin::check_for_valid_positive_value(pt, word, line, prefix, unit, "time", 0,
+                                        1, "input", "0.0 - 1s");
+    // save sanitized value
+    program::internal::electrical_begin_time = pt;
+    return true;
+  }
+
+  test = "electrical-consistent-time";
+  if (word == test) {
+    double pt = atof(value.c_str()); // convert string to uint64_t
+    // Test for valid range
+    vin::check_for_valid_positive_value(pt, word, line, prefix, unit, "time", 0,
+                                        1, "input", "0.0 - 1s");
+    // save sanitized value
+    program::internal::electrical_consistent_time = pt;
+    return true;
+  }
+
   // Keyword not found
   //--------------------------------------------------------------------
   return false;
