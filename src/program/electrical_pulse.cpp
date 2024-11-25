@@ -70,7 +70,9 @@ void update_electrical_pulse_consistent(const double time_from_start) {
     pg::fractional_electric_field_strength = 0.0;
   } else {
     // Calculate the time within the current pulse cycle
-    const double cycle_time = fmod(time_from_start, pgi::electrical_duration);
+    const double cycle_time =
+        fmod(time_from_start - pg::internal::electrical_begin_time,
+             pgi::electrical_duration);
 
     // Implement rise time
     if (cycle_time < pgi::electrical_pulse_rise_time) {
